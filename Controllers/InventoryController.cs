@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using InventoryApi.Services.Interfaces;
 using InventoryApi.Models.Common;
+using InventoryApi.Models;
 // using Swashbuckle.AspNetCore.Annotations;
 // using Swashbuckle.AspNetCore.Filters;
 
@@ -17,7 +18,8 @@ public class InventoryController : ControllerBase
         _service = service;
     }
     /// <summary>
-    /// Uploads inventory items from a CSV file. The CSV should have the following columns: Name, Category, Price, Quantity. The API will process the file and return the total number of records processed along with any errors encountered during processing.
+    /// Uploads inventory items from a CSV file. The CSV should have the following columns: Name, Category, Price, Quantity. 
+    /// The API will process the file and return the total number of records processed along with any errors encountered during processing.
     /// </summary>
     /// <param name="file"></param>
     /// <returns></returns>
@@ -67,7 +69,6 @@ public class InventoryController : ControllerBase
         {
             return BadRequest(new ApiResponse<string>
             {
-
                 Message = "An error occurred while processing the request" + ex.Message,
                 StatusCode = 500,
             });
@@ -81,7 +82,7 @@ public class InventoryController : ControllerBase
     /// <param name="filter">Filter criteria (Name, Category, Price range)</param>
     /// <returns>Paginated inventory response</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PagedResponse<Models.Inventory>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<Inventory>>), 200)]
     [ProducesResponseType(typeof(ApiResponse<string>), 400)]
     public async Task<IActionResult> Get(
         int page = 1,
@@ -98,10 +99,8 @@ public class InventoryController : ControllerBase
                 });
             var data = await _service.GetInventoryAsync(page, size, filter);
 
-            var response = new ApiResponse<PagedResponse<Models.Inventory>>
+            var response = new ApiResponse<PagedResponse<Inventory>>
             {
-
-
                 Message = "Inventory retrieved successfully",
                 IsSuccessful = true,
                 StatusCode = 200,
@@ -109,6 +108,61 @@ public class InventoryController : ControllerBase
             };
 
             return Ok(response);
+
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<string>
+            {
+
+                Message = "An error occurred while processing the request" + ex.Message,
+                StatusCode = 500,
+            });
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a single inventory item by its ID.  
+    /// it returns a 400 Bad Request response. This endpoint allows clients to fetch specific inventory items based on their unique identifier.    
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<Inventory>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<string>), 400)]
+    [ProducesResponseType(typeof(ApiResponse<string>), 404)]
+    public async Task<IActionResult> GetSingleInventory(int id)
+    {
+        try
+        {
+            if (id <= 0)
+                return BadRequest(new ApiResponse<string>
+                {
+
+                    Message = "Request failed",
+                    StatusCode = 400,
+                });
+            var data = await _service.GetSingleInventoryAsync(id);
+
+            if (data == null)
+            {
+                return NotFound(new ApiResponse<string>
+                {
+                    Message = "Inventory item not found",
+                    StatusCode = 404,
+                });
+            }
+
+            var response = new ApiResponse<Inventory>
+            {
+                Message = "Inventory item retrieved successfully",
+                IsSuccessful = true,
+                StatusCode = 200,
+                Data = data
+            };
+
+            return Ok(response);
+
         }
         catch (Exception ex)
         {

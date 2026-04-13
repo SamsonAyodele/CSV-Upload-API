@@ -7,5 +7,6 @@ public interface IDbHelper
 {
     Task BulkUpsertAsync(List<Inventory> items);
     Task<PagedResponse<Inventory>> GetInventoryAsync(int page, int size, InventoryFilter? filter);
-    // Task BulkUpsertAsync(List<Models.Inventory> items);
+    Task<Inventory> GetSingleInventoryAsync(int id);
+    // Task<Inventory> UpdateSingleInventoryAsync(int id, Inventory updatedItem);
 }

@@ -94,13 +94,10 @@ public class DbHelper : IDbHelper
 
         await reader.NextResultAsync();
 
-
-
         while (await reader.ReadAsync())
         {
-            list.Add(new Models.Inventory
+            list.Add(new Inventory
             {
-
                 Id = (int)reader["Id"],
                 Name = reader["Name"]?.ToString() ?? "",
                 Category = reader["Category"]?.ToString() ?? "",
@@ -112,5 +109,30 @@ public class DbHelper : IDbHelper
         return response;
     }
 
+    public async Task<Inventory> GetSingleInventoryAsync(int id)
+    {
+        using var con = new SqlConnection(_connection);
+        using var cmd = new SqlCommand("sp_get_inventory_by_id", con);
 
+        cmd.CommandType = CommandType.StoredProcedure;
+        cmd.Parameters.AddWithValue("@Id", id);
+
+        await con.OpenAsync();
+        using var reader = await cmd.ExecuteReaderAsync();
+
+        if (await reader.ReadAsync())
+        {
+            return new Inventory
+            {
+                Id = (int)reader["Id"],
+                Name = reader["Name"]?.ToString() ?? "",
+                Category = reader["Category"]?.ToString() ?? "",
+                Price = (decimal)reader["Price"],
+                StockQuantity = (int)reader["StockQuantity"]
+            };
+        }
+
+        throw new KeyNotFoundException($"Inventory with ID {id} not found.");
+
+    }
 }

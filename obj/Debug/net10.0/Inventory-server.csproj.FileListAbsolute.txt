@@ -78,3 +78,4 @@ C:\Users\LENOVO\Desktop\Inventory\InventoryApi\obj\Debug\net10.0\Inventory-serve
 C:\Users\LENOVO\Desktop\Inventory\InventoryApi\obj\Debug\net10.0\Inventory-server.pdb
 C:\Users\LENOVO\Desktop\Inventory\InventoryApi\obj\Debug\net10.0\Inventory-server.genruntimeconfig.cache
 C:\Users\LENOVO\Desktop\Inventory\InventoryApi\obj\Debug\net10.0\ref\Inventory-server.dll
+C:\Users\LENOVO\Desktop\Inventory\InventoryApi\obj\Debug\net10.0\Inventory-server.sourcelink.json

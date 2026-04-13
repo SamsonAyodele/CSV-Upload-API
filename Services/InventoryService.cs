@@ -5,6 +5,7 @@ using InventoryApi.Data.Interfaces;
 using InventoryApi.Services.Interfaces;
 using InventoryApi.Models.Common;
 
+
 namespace InventoryApi.Services;
 
 public class InventoryService : IInventoryService
@@ -28,7 +29,7 @@ public class InventoryService : IInventoryService
 
         var rows = csv.GetRecords<dynamic>();
 
-        var inventoryList = new List<Models.Inventory>();
+        var inventoryList = new List<Inventory>();
         foreach (var row in rows)
         {
             try
@@ -66,7 +67,7 @@ public class InventoryService : IInventoryService
                     continue;
                 }
 
-                inventoryList.Add(new Models.Inventory
+                inventoryList.Add(new Inventory
                 {
                     Id = id,
                     Name = name,
@@ -89,19 +90,20 @@ public class InventoryService : IInventoryService
         {
             return (0, errors);
         }
-        foreach (var item in inventoryList)
-        {
-            await _db.BulkUpsertAsync(inventoryList);
-        }
-        // if (inventoryList.Count > 0)
-        // {
-        //     await _db.BulkUpsertAsync(inventoryList);
-        // }
+
+        await _db.BulkUpsertAsync(inventoryList);
+        // ServiceUtil.WriteToFile("Bulk upsert completed");
+
         return (success, errors);
     }
 
-    public async Task<PagedResponse<Models.Inventory>> GetInventoryAsync(int page, int size, InventoryFilter? filter)
+    public async Task<PagedResponse<Inventory>> GetInventoryAsync(int page, int size, InventoryFilter? filter)
     {
         return await _db.GetInventoryAsync(page, size, filter);
+    }
+
+    public async Task<Inventory> GetSingleInventoryAsync(int id)
+    {
+        return await _db.GetSingleInventoryAsync(id);
     }
 }
