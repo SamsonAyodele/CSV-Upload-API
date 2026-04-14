@@ -4,6 +4,7 @@ using InventoryApi.Models;
 using InventoryApi.Data.Interfaces;
 using InventoryApi.Services.Interfaces;
 using InventoryApi.Models.Common;
+using Microsoft.AspNetCore.Http.Features;
 
 
 namespace InventoryApi.Services;
@@ -12,11 +13,13 @@ public class InventoryService : IInventoryService
 {
     private readonly IDbHelper _db;
     private readonly ILogger<InventoryService> _logger;
+    private readonly ICurrencyService _currencyService;
 
-    public InventoryService(IDbHelper db, ILogger<InventoryService> logger)
+    public InventoryService(IDbHelper db, ILogger<InventoryService> logger, ICurrencyService currencyService)
     {
         _db = db;
         _logger = logger;
+        _currencyService = currencyService;
     }
 
     public async Task<(int success, List<string> errors)> UploadCsvAsync(Stream stream)
@@ -30,6 +33,8 @@ public class InventoryService : IInventoryService
         var rows = csv.GetRecords<dynamic>();
 
         var inventoryList = new List<Inventory>();
+        var currencies = new HashSet<string>();
+
         foreach (var row in rows)
         {
             try
@@ -60,6 +65,9 @@ public class InventoryService : IInventoryService
 
                 string name = row.Name?.ToString()?.Trim() ?? "";
                 string category = row.Category?.ToString()?.Trim() ?? "";
+                string currency = row.Currency?.ToString() ?? "USD";
+
+                currencies.Add(currency);
 
                 if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(category))
                 {
@@ -73,7 +81,8 @@ public class InventoryService : IInventoryService
                     Name = name,
                     Category = category,
                     Price = price,
-                    StockQuantity = stock
+                    StockQuantity = stock,
+                    Currency = currency
                 });
 
                 success++;
@@ -91,6 +100,22 @@ public class InventoryService : IInventoryService
             return (0, errors);
         }
 
+        var rates = await _currencyService.GetRatesToUsdAsync(currencies);
+        foreach (var item in inventoryList)
+        {
+            if (item.Currency == "USD")
+            {
+                continue;
+            }
+            if (string.IsNullOrEmpty(item.Currency) || !rates.TryGetValue(item.Currency, out var rate))
+            {
+                errors.Add($"Unsupported currency: {item.Currency}");
+                continue;
+            }
+
+            item.Price = Math.Round(item.Price * rate, 2);
+            item.Currency = null; // Clear currency since it's now in USD
+        }
         await _db.BulkUpsertAsync(inventoryList);
         // ServiceUtil.WriteToFile("Bulk upsert completed");
 

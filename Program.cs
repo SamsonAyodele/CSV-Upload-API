@@ -27,6 +27,7 @@ builder.Services.AddSwaggerGen(options =>
     options.IncludeXmlComments(xmlPath);
     // options.EnableAnnotations();
 });
+builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
