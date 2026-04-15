@@ -17,39 +17,35 @@ public class CurrencyService : ICurrencyService
         _http = http;
         _logger = logger;
     }
-    // This method fetches exchange rates for the specified currencies to USD using the Frankfurter API
-    // It returns a dictionary where the key is the currency code and the value is the exchange rate to USD
-    // IEnumerable<string> currencies: A collection of currency codes for which exchange rates to USD are needed.
-    // If a currency is "USD", it directly assigns an exchange rate of 1. For other currencies, it makes an API call to fetch the exchange rate.
+    // This method fetches exchange rates for the specified currencies to EUR using the Frankfurter API
+    // It returns a dictionary where the key is the currency code and the value is the exchange rate to EUR
+    // IEnumerable<string> currencies: A collection of currency codes for which exchange rates to EUR are needed.
+    // If a currency is "EUR", it directly assigns an exchange rate of 1. For other currencies, it makes an API call to fetch the exchange rate.
     // If the API call fails for any currency, it logs the error and continues processing the remaining currencies without throwing an exception.
     //
-    public async Task<Dictionary<string, decimal>> GetRatesToUsdAsync(IEnumerable<string> currencies)
+    public async Task<Dictionary<string, decimal>> GetRatesToEurAsync(string currency)
     {
         var result = new Dictionary<string, decimal>();
 
-        foreach (var currency in currencies.Distinct())
+       // foreach (var currency in currencies.Distinct())
         {
-            if (currency == "USD")
-            {
-                result[currency] = 1;
-                continue;
-            }
+
 
             try
             {
-                var url = $"https://api.frankfurter.app/latest?from={currency}&to=USD";
+                var url = $"https://api.frankfurter.app/latest?from={currency}&to=EUR";
 
                 var response = await _http.GetFromJsonAsync<FrankfurterResponse>(url);
 
-                if (response?.Rates != null && response.Rates.ContainsKey("USD"))
+                if (response?.Rates != null && response.Rates.ContainsKey("EUR"))
                 {
-                    result[currency] = response.Rates["USD"];
+                    result[currency] = response.Rates["EUR"];
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Log the error and continue with other currencies
-                // _logger.LogError(ex, $"Failed to get exchange rate for {currency}");
+                _logger.LogError(ex, $"Failed to get exchange rate for {currency}");
                 ServiceUtil.WriteToFile("Failed to get exchange rate for " + currency);
 
             }

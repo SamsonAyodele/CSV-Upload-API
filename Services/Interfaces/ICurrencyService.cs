@@ -2,5 +2,5 @@ namespace InventoryApi.Services.Interfaces;
 
 public interface ICurrencyService
 {
-    Task<Dictionary<string, decimal>> GetRatesToUsdAsync(IEnumerable<string> currencies);
+    Task<Dictionary<string, decimal>> GetRatesToEurAsync(string currencies);
 }

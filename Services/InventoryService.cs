@@ -5,6 +5,7 @@ using InventoryApi.Data.Interfaces;
 using InventoryApi.Services.Interfaces;
 using InventoryApi.Models.Common;
 using Microsoft.AspNetCore.Http.Features;
+using System.Data;
 
 
 namespace InventoryApi.Services;
@@ -33,7 +34,6 @@ public class InventoryService : IInventoryService
         var rows = csv.GetRecords<dynamic>();
 
         var inventoryList = new List<Inventory>();
-        var currencies = new HashSet<string>();
 
         foreach (var row in rows)
         {
@@ -65,9 +65,7 @@ public class InventoryService : IInventoryService
 
                 string name = row.Name?.ToString()?.Trim() ?? "";
                 string category = row.Category?.ToString()?.Trim() ?? "";
-                string currency = row.Currency?.ToString() ?? "USD";
 
-                currencies.Add(currency);
 
                 if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(category))
                 {
@@ -82,7 +80,6 @@ public class InventoryService : IInventoryService
                     Category = category,
                     Price = price,
                     StockQuantity = stock,
-                    Currency = currency
                 });
 
                 success++;
@@ -100,22 +97,6 @@ public class InventoryService : IInventoryService
             return (0, errors);
         }
 
-        var rates = await _currencyService.GetRatesToUsdAsync(currencies);
-        foreach (var item in inventoryList)
-        {
-            if (item.Currency == "USD")
-            {
-                continue;
-            }
-            if (string.IsNullOrEmpty(item.Currency) || !rates.TryGetValue(item.Currency, out var rate))
-            {
-                errors.Add($"Unsupported currency: {item.Currency}");
-                continue;
-            }
-
-            item.Price = Math.Round(item.Price * rate, 2);
-            item.Currency = null; // Clear currency since it's now in USD
-        }
         await _db.BulkUpsertAsync(inventoryList);
         // ServiceUtil.WriteToFile("Bulk upsert completed");
 
@@ -124,7 +105,33 @@ public class InventoryService : IInventoryService
 
     public async Task<PagedResponse<Inventory>> GetInventoryAsync(int page, int size, InventoryFilter? filter)
     {
-        return await _db.GetInventoryAsync(page, size, filter);
+        // Created a HashSet to store unique currency codes from the inventory items. 
+        // This ensures that we only fetch exchange rates for distinct currencies, avoiding duplicate API calls.
+        // optimizing the number of API calls.
+        //var currencies = new HashSet<string>();
+        var pagedRows = await _db.GetInventoryAsync(page, size, filter);
+        var rows = pagedRows.Items;
+        // foreach (var row in rows)
+        // {
+        //     currencies.Add(row.Currency ?? "USD");
+        // }
+        var currency = "USD";
+
+        var rates = await _currencyService.GetRatesToEurAsync(currency);
+
+        foreach (var row in rows)
+        {
+            // row.Currency ??= "USD";
+            // currencies.Add(row.Currency);
+            if (string.IsNullOrEmpty(row.Currency) || !rates.TryGetValue(row.Currency, out var rate))
+            {
+                continue;
+            }
+            row.Price = Math.Round(row.Price * rate, 2);
+            row.Currency = "EUR";
+        }
+
+        return pagedRows;
     }
 
     public async Task<Inventory> GetSingleInventoryAsync(int id)
